@@ -1,0 +1,231 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>dpdk解析报文协议-基于l2fwd | 个人随笔2020ooo-万能的小陈</title><meta name="author" content="Ang"><meta name="copyright" content="Ang"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="dpdk解析报文协议-基于l2fwd0 前置条件1、这里需要两台虚拟机，配置了相同的虚拟网络，可以通过tcpreplay在一台虚拟机回放报文，在另一台虚拟机通过tcpdump -i 网卡名 捕获到。  具体配置可参考https:&#x2F;&#x2F;www.jb51.net&#x2F;server&#x2F;2946942fw.htm  2、需要dpdk环境配置完成 3、大致了解计算机网络的以太网层、ip层、tcp&#x2F;udp层">
+<meta property="og:type" content="article">
+<meta property="og:title" content="dpdk解析报文协议-基于l2fwd">
+<meta property="og:url" content="https://chenanga.github.io/post/dpdk-analysis-powersbased-on-l2fwd-zoiac9.html">
+<meta property="og:site_name" content="个人随笔2020ooo-万能的小陈">
+<meta property="og:description" content="dpdk解析报文协议-基于l2fwd0 前置条件1、这里需要两台虚拟机，配置了相同的虚拟网络，可以通过tcpreplay在一台虚拟机回放报文，在另一台虚拟机通过tcpdump -i 网卡名 捕获到。  具体配置可参考https:&#x2F;&#x2F;www.jb51.net&#x2F;server&#x2F;2946942fw.htm  2、需要dpdk环境配置完成 3、大致了解计算机网络的以太网层、ip层、tcp&#x2F;udp层">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/8.png">
+<meta property="article:published_time" content="2023-12-25T03:34:32.000Z">
+<meta property="article:modified_time" content="2024-08-25T15:23:05.000Z">
+<meta property="article:author" content="Ang">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/8.png"><link rel="shortcut icon" href="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/logo-mini-touming.png"><link rel="canonical" href="https://chenanga.github.io/post/dpdk-analysis-powersbased-on-l2fwd-zoiac9"><link rel="preconnect" href="//cdn.jsdelivr.net"/><meta name="google-site-verification" content="gxgalp_aqn9qqeWjfjxB74lJqZVbasK0TmI2Lkn54IA"/><meta name="baidu-site-verification" content="code-mulXcvyCOS"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://npm.elemecdn.com/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":200},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"limitCount":100,"languages":{"author":"作者: Ang","link":"链接: ","source":"来源: 个人随笔2020ooo-万能的小陈","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。"}},
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://npm.elemecdn.com/flickr-justified-gallery@2/dist/fjGallery.min.js',
+      css: 'https://npm.elemecdn.com/flickr-justified-gallery@2/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'dpdk解析报文协议-基于l2fwd',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-08-25 23:23:05'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/myAdd/mouse.css"><link rel="stylesheet" href="//at.alicdn.com/t/font_3323767_zjl3yo4iea.css"><meta name="generator" content="Hexo 6.1.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/avatar.jpg" onerror="onerror=null;src='https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">12</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> 文章归档</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li></ul></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> 娱乐</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/8.png')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">个人随笔2020ooo-万能的小陈</a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> 文章归档</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li></ul></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> 娱乐</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">dpdk解析报文协议-基于l2fwd</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-12-25T03:34:32.000Z" title="发表于 2023-12-25 11:34:32">2023-12-25</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-08-25T15:23:05.000Z" title="更新于 2024-08-25 23:23:05">2024-08-25</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">字数总计:</span><span class="word-count">1.3k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>5分钟</span></span><span class="post-meta-separator">|</span><span class="leancloud_visitors" id="/post/dpdk-analysis-powersbased-on-l2fwd-zoiac9.html" data-flag-title="dpdk解析报文协议-基于l2fwd"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span class="leancloud-visitors-count"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="dpdk解析报文协议-基于l2fwd"><a href="#dpdk解析报文协议-基于l2fwd" class="headerlink" title="dpdk解析报文协议-基于l2fwd"></a>dpdk解析报文协议-基于l2fwd</h1><h1 id="0-前置条件"><a href="#0-前置条件" class="headerlink" title="0 前置条件"></a>0 前置条件</h1><p>1、这里需要两台虚拟机，配置了相同的虚拟网络，可以通过tcpreplay在一台虚拟机回放报文，在另一台虚拟机通过tcpdump -i 网卡名 捕获到。</p>
+<blockquote>
+<p>具体配置可参考<a target="_blank" rel="noopener" href="https://www.jb51.net/server/2946942fw.htm">https://www.jb51.net/server/2946942fw.htm</a></p>
+</blockquote>
+<p>2、需要dpdk环境配置完成</p>
+<p>3、大致了解计算机网络的以太网层、ip层、tcp&#x2F;udp层、应用层http等之间的关系，如下图所示</p>
+<p>​<img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/girls/image-20231225175755-j8rcom7.png" alt="image">​</p>
+<h1 id="1-l2fwd运行"><a href="#1-l2fwd运行" class="headerlink" title="1 l2fwd运行"></a>1 l2fwd运行</h1><p>进入example中的l2fwd代码目录下，执行下列命令</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="keyword">export</span> RTE_TARGET=x86_64-native-linuxapp-gcc</span><br><span class="line"><span class="keyword">export</span> RTE_SDK=/home/chen/code/dpdk/dpdk-stable<span class="number">-19.11</span><span class="number">.14</span></span><br><span class="line">make</span><br><span class="line"></span><br><span class="line"># 运行</span><br><span class="line">sudo ./build/l2fwd -l <span class="number">0</span><span class="number">-1</span> -- -p <span class="number">0x3</span> -T <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>如果一切正常，则应该输出下图，可以通过在另一台虚拟机回放相关报文，观察统计信息变化情况​​</p>
+<p>​<img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/girls/image-20231225174056-a63tgdb.png" alt="image">​</p>
+<p>‍</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"># 另一台虚拟机</span><br><span class="line">sudo tcpreplay -i ens38 xxxx.pcap</span><br></pre></td></tr></table></figure>
+
+<p>​<img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/girls/image-20231225174259-fy0zjyw.png" alt="image">​</p>
+<p>在运行l2fwd的虚拟机上可以看到</p>
+<p>​<img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/girls/image-20231225174329-0hi9m3y.png" alt="image">​</p>
+<p>‍</p>
+<p>此时说明前面的没问题。</p>
+<h1 id="2-l2fwd-整体代码解析"><a href="#2-l2fwd-整体代码解析" class="headerlink" title="2 l2fwd 整体代码解析"></a>2 l2fwd 整体代码解析</h1><p>目前浅显的理解可以认为其他部分在初始化，主循环为<code>l2fwd_main_loop</code>​</p>
+<h1 id="3-l2fwd-修改"><a href="#3-l2fwd-修改" class="headerlink" title="3 l2fwd 修改"></a>3 l2fwd 修改</h1><p>1、原先的<code>l2fwd_simple_forward</code>​函数是负责修改mac地址并转发报文，那么我们也可以在l2fwd所在的那层循环中，去做解析报文。</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 遍历所有配置的接收端口</span></span><br><span class="line"><span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; qconf-&gt;n_rx_port; i++) &#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 从接收端口列表 qconf-&gt;rx_port_list 中获取当前迭代的端口 ID。</span></span><br><span class="line">	portid = qconf-&gt;rx_port_list[i];</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 调用 rte_eth_rx_burst 函数从指定的端口（portid）接收数据包</span></span><br><span class="line">	nb_rx = <span class="built_in">rte_eth_rx_burst</span>(portid, <span class="number">0</span>,</span><br><span class="line">				 pkts_burst, MAX_PKT_BURST);</span><br><span class="line"></span><br><span class="line">	port_statistics[portid].rx += nb_rx;</span><br><span class="line">	<span class="comment">// printf(&quot;nb_rx: %d\n&quot;, nb_rx);</span></span><br><span class="line">	<span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; nb_rx; j++) &#123;</span><br><span class="line"></span><br><span class="line">		m = pkts_burst[j];</span><br><span class="line">		<span class="built_in">rte_prefetch0</span>(<span class="built_in">rte_pktmbuf_mtod</span>(m, <span class="type">void</span> *));</span><br><span class="line">		<span class="built_in">parse_packet</span>(m);</span><br><span class="line">		<span class="comment">// l2fwd_simple_forward(m, portid);</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>2、我们可以增加一个<code>parse_packet</code>​函数，参照<code>l2fwd_mac_updating</code>​中的处理流程，使用官方api <code>rte_pktmbuf_mtod</code>​获得以太网头部信息，并存入<code>rte_ether_hdr</code>​结构体。</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">parse_packet</span><span class="params">(<span class="keyword">struct</span> rte_mbuf *m)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">rte_ether_hdr</span> *eth_hdr;</span><br><span class="line">    eth_hdr = <span class="built_in">rte_pktmbuf_mtod</span>(m, <span class="keyword">struct</span> rte_ether_hdr *);</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> total_length = <span class="built_in">rte_pktmbuf_pkt_len</span>(mbuf); <span class="comment">// 获取整个包的长度</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> ether_hdr_len = <span class="built_in">sizeof</span>(<span class="keyword">struct</span> rte_ether_hdr); <span class="comment">// 以太网头部长度</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> data_len = total_length - ether_hdr_len; <span class="comment">// 剩余数据长度（去除以太网头部）</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Ethernet header: Contains the destination address, source address</span></span><br><span class="line"><span class="comment"> * and frame type.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">rte_ether_hdr</span> &#123;</span><br><span class="line">	<span class="keyword">struct</span> <span class="title class_">rte_ether_addr</span> d_addr; <span class="comment">/**&lt; Destination address. */</span></span><br><span class="line">	<span class="keyword">struct</span> <span class="title class_">rte_ether_addr</span> s_addr; <span class="comment">/**&lt; Source address. */</span></span><br><span class="line">	<span class="type">uint16_t</span> ether_type;      <span class="comment">/**&lt; Frame type. */</span></span><br><span class="line">&#125; __attribute__((<span class="built_in">aligned</span>(<span class="number">2</span>)));</span><br></pre></td></tr></table></figure>
+
+<p>此时可以得到原mac和目的mac，以及ip版本，和下图的MAC帧是对应的。</p>
+<p>​<img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/girls/image-20231225175830-jt95u6g.png" alt="image">​</p>
+<p>‍</p>
+<p>3、通过ip类型，判断是ipv4还是ipv6，进行不同的处理，这里面需要注意的是有大小端的转换（RTE_ETHER_TYPE_IPV4是大端），用rte_be_to_cpu_16。ip层相关的信息都保存在<code>ipv4_hdr</code>​中</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line">    <span class="comment">// 检查 IP 版本并获取 IP 头部</span></span><br><span class="line">    <span class="keyword">if</span> (eth_hdr-&gt;ether_type &lt;span style=<span class="string">&quot;font-weight: bold;&quot;</span> <span class="keyword">class</span>=<span class="string">&quot;mark&quot;</span>&gt; <span class="built_in">rte_be_to_cpu_16</span>(RTE_ETHER_TYPE_IPV4)) &#123;</span><br><span class="line">		<span class="built_in">parse_packet_ipv4</span>((<span class="keyword">struct</span> rte_ipv4_hdr *)(eth_hdr + <span class="number">1</span>), data_len); <span class="comment">// 由于以太网头部长度固定，这里直接调过以太网头部字段，</span></span><br><span class="line">        <span class="comment">// 处理 IPv4 头部...</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (eth_hdr-&gt;ether_type &lt;/span&gt; <span class="built_in">rte_be_to_cpu_16</span>(RTE_ETHER_TYPE_IPV6)) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;ipv6\n&quot;</span>);</span><br><span class="line">		<span class="comment">// struct rte_ipv6_hdr *ipv6_hdr;</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * IPv4 Header</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">rte_ipv4_hdr</span> &#123;</span><br><span class="line">	<span class="type">uint8_t</span>  version_ihl;		<span class="comment">/**&lt; version and header length */</span></span><br><span class="line">	<span class="type">uint8_t</span>  type_of_service;	<span class="comment">/**&lt; type of service */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> total_length;	<span class="comment">/**&lt; length of packet */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> packet_id;		<span class="comment">/**&lt; packet ID */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> fragment_offset;	<span class="comment">/**&lt; fragmentation offset */</span></span><br><span class="line">	<span class="type">uint8_t</span>  time_to_live;		<span class="comment">/**&lt; time to live */</span></span><br><span class="line">	<span class="type">uint8_t</span>  next_proto_id;		<span class="comment">/**&lt; protocol ID */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> hdr_checksum;	<span class="comment">/**&lt; header checksum */</span></span><br><span class="line">	<span class="type">rte_be32_t</span> src_addr;		<span class="comment">/**&lt; source address */</span></span><br><span class="line">	<span class="type">rte_be32_t</span> dst_addr;		<span class="comment">/**&lt; destination address */</span></span><br><span class="line">&#125; __attribute__((__packed__));</span><br></pre></td></tr></table></figure>
+
+<p>​<img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/girls/image-20231225175355-muzd5hs.png" alt="image">​</p>
+<p>4、通过ip层协议标识<code>next_proto_id</code>​判断是tcp还是udp</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">parse_packet_ipv4</span><span class="params">(<span class="keyword">struct</span> rte_ipv4_hdr *ipv4_hdr, <span class="type">unsigned</span> <span class="type">int</span> data_len)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">print_ipv4_addr</span>(<span class="string">&quot;ipv4_src_addr:&quot;</span>, ipv4_hdr-&gt;src_addr);</span><br><span class="line">	<span class="built_in">print_ipv4_addr</span>(<span class="string">&quot;ipv4_dst_addr:&quot;</span>, ipv4_hdr-&gt;dst_addr);</span><br><span class="line"></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> ipv4_hdr_len = (ipv4_hdr-&gt;version_ihl &amp; <span class="number">0x0F</span>) * <span class="number">4</span>; <span class="comment">// 头部长度以4字节为单位</span></span><br><span class="line">	<span class="comment">// 检查协议类型并获取 TCP/UDP 头部</span></span><br><span class="line">    <span class="keyword">if</span> (ipv4_hdr-&gt;next_proto_id &lt;span style=<span class="string">&quot;font-weight: bold;&quot;</span> <span class="keyword">class</span>=<span class="string">&quot;mark&quot;</span>&gt; IPPROTO_TCP) &#123;</span><br><span class="line">        <span class="built_in">parse_packet_tcp</span>((<span class="keyword">struct</span> rte_tcp_hdr *)((<span class="type">unsigned</span> <span class="type">char</span> *)ipv4_hdr + ipv4_hdr_len), data_len - ipv4_hdr_len);</span><br><span class="line">        <span class="comment">// 处理 TCP 头部...</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ipv4_hdr-&gt;next_proto_id &lt;/span&gt; IPPROTO_UDP) &#123;</span><br><span class="line">		<span class="built_in">parse_packet_udp</span>((<span class="keyword">struct</span> rte_udp_hdr *)((<span class="type">unsigned</span> <span class="type">char</span> *)ipv4_hdr + ipv4_hdr_len), data_len - ipv4_hdr_len);</span><br><span class="line">        <span class="comment">// 处理 UDP 头部...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">rte_tcp_hdr</span> &#123;</span><br><span class="line">	<span class="type">rte_be16_t</span> src_port; <span class="comment">/**&lt; TCP source port. */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> dst_port; <span class="comment">/**&lt; TCP destination port. */</span></span><br><span class="line">	<span class="type">rte_be32_t</span> sent_seq; <span class="comment">/**&lt; TX data sequence number. */</span></span><br><span class="line">	<span class="type">rte_be32_t</span> recv_ack; <span class="comment">/**&lt; RX data acknowledgment sequence number. */</span></span><br><span class="line">	<span class="type">uint8_t</span>  data_off;   <span class="comment">/**&lt; Data offset. */</span></span><br><span class="line">	<span class="type">uint8_t</span>  tcp_flags;  <span class="comment">/**&lt; TCP flags */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> rx_win;   <span class="comment">/**&lt; RX flow control window. */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> cksum;    <span class="comment">/**&lt; TCP checksum. */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> tcp_urp;  <span class="comment">/**&lt; TCP urgent pointer, if any. */</span></span><br><span class="line">&#125; __attribute__((__packed__));</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">rte_udp_hdr</span> &#123;</span><br><span class="line">	<span class="type">rte_be16_t</span> src_port;    <span class="comment">/**&lt; UDP source port. */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> dst_port;    <span class="comment">/**&lt; UDP destination port. */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> dgram_len;   <span class="comment">/**&lt; UDP datagram length */</span></span><br><span class="line">	<span class="type">rte_be16_t</span> dgram_cksum; <span class="comment">/**&lt; UDP datagram checksum */</span></span><br><span class="line">&#125; __attribute__((__packed__));</span><br></pre></td></tr></table></figure>
+
+<p>​<img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/girls/image-20231225192244-gakwzpi.png" alt="image">​</p>
+<p>​<img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/girls/image-20231225192326-46b1rio.png" alt="image">​</p>
+<p>5、以tcp为例，判断是否是http(这里简单判断端口是否为80)</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line">	<span class="function"><span class="type">void</span> <span class="title">parse_packet_tcp</span><span class="params">(<span class="keyword">struct</span> rte_tcp_hdr *tcp_hdr, <span class="type">unsigned</span> <span class="type">int</span> data_len)</span> </span>&#123;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> tcp_hdr_len = ((tcp_hdr-&gt;data_off &amp; <span class="number">0xF0</span>) &gt;&gt; <span class="number">4</span>) * <span class="number">4</span>; <span class="comment">// 高 4 位表示 TCP 头部的长度</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> *tcp_payload = ((<span class="type">unsigned</span> <span class="type">char</span> *)tcp_hdr) + tcp_hdr_len;</span><br><span class="line">	 <span class="type">unsigned</span> <span class="type">int</span> tcp_payload_len = data_len - tcp_hdr_len; <span class="comment">// TCP 负载长度</span></span><br><span class="line">	<span class="comment">// 将端口从网络字节序转换为主机字节序</span></span><br><span class="line">    <span class="type">uint16_t</span> port_host_order = <span class="built_in">rte_be_to_cpu_16</span>(tcp_hdr-&gt;dst_port);</span><br><span class="line">	<span class="keyword">if</span> (port_host_order == <span class="number">80</span>) &#123;</span><br><span class="line">		<span class="built_in">parse_packet_http</span>(tcp_payload, tcp_payload_len);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>6、打印http负载，由于http负载的结束有很多种情况（ip是否分片,http流是否结束等），所以需要基于报文长度依次减去各部分的头部来确定http负载的长度</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">parse_packet_http</span><span class="params">(<span class="type">unsigned</span> <span class="type">char</span> *http_payload, <span class="type">unsigned</span> <span class="type">int</span> data_len)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// http 以 \r\n换行</span></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;HTTP Payload:\n&quot;</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">unsigned</span> <span class="type">int</span> i = <span class="number">0</span>; i &lt; data_len; ++i) &#123;</span><br><span class="line">        <span class="type">char</span> c = http_payload[i];</span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">isprint</span>(c) || c &lt;span style=<span class="string">&quot;font-weight: bold;&quot;</span> <span class="keyword">class</span>=<span class="string">&quot;mark&quot;</span>&gt; <span class="string">&#x27;\n&#x27;</span> || c &lt;/span&gt; <span class="string">&#x27;\r&#x27;</span>) &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;%c&quot;</span>, c);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;.&quot;</span>); <span class="comment">// 非可打印字符用点号表示</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>‍</p>
+<p>​<img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/girls/image-20231225201249-uuck8de.png" alt="image">​</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="https://chenanga.github.io">Ang</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://chenanga.github.io/post/dpdk-analysis-powersbased-on-l2fwd-zoiac9.html">https://chenanga.github.io/post/dpdk-analysis-powersbased-on-l2fwd-zoiac9.html</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://chenanga.github.io" target="_blank">个人随笔2020ooo-万能的小陈</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/8.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://npm.elemecdn.com/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/gh/overtrue/share.js@master/dist/js/social-share.min.js" defer></script></div></div><div class="post-reward"><div class="reward-button"><i class="fas fa-qrcode"></i> 打赏</div><div class="reward-main"><ul class="reward-all"><li class="reward-item"><a href="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/reward/wechat.png" target="_blank"><img class="post-qr-code-img" src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/reward/wechat.png" alt="wechat"/></a><div class="post-qr-code-desc">wechat</div></li><li class="reward-item"><a href="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/reward/alipay.jpg" target="_blank"><img class="post-qr-code-img" src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/reward/alipay.jpg" alt="alipay"/></a><div class="post-qr-code-desc">alipay</div></li></ul></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/post/in-depth-understanding-c-pointer-zp4avd.html"><img class="prev-cover" src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/1.png" onerror="onerror=null;src='https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">深入理解C指针</div></div></a></div><div class="next-post pull-right"><a href="/post/python-debugging-method-z2sbahj.html"><img class="next-cover" src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/7.png" onerror="onerror=null;src='https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Python 调试手段</div></div></a></div></nav><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div class="vcomment" id="vcomment"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/avatar.jpg" onerror="this.onerror=null;this.src='https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Ang</div><div class="author-info__description"></div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">12</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/chenanga"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://blog.csdn.net/weixin_42035347?type=blog" target="_blank" title="CSDN"><i class="iconfont icon-csdn1"></i></a><a class="social-icon" href="https://github.com/chenanga" target="_blank" title="Github"><i class="iconfont icon-github"></i></a><a class="social-icon" href="mailto:527683718@qq.com" target="_blank" title="Email"><i class="iconfont icon-Mail"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#dpdk%E8%A7%A3%E6%9E%90%E6%8A%A5%E6%96%87%E5%8D%8F%E8%AE%AE-%E5%9F%BA%E4%BA%8El2fwd"><span class="toc-number">1.</span> <span class="toc-text">dpdk解析报文协议-基于l2fwd</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0-%E5%89%8D%E7%BD%AE%E6%9D%A1%E4%BB%B6"><span class="toc-number">2.</span> <span class="toc-text">0 前置条件</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#1-l2fwd%E8%BF%90%E8%A1%8C"><span class="toc-number">3.</span> <span class="toc-text">1 l2fwd运行</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-l2fwd-%E6%95%B4%E4%BD%93%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="toc-number">4.</span> <span class="toc-text">2 l2fwd 整体代码解析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-l2fwd-%E4%BF%AE%E6%94%B9"><span class="toc-number">5.</span> <span class="toc-text">3 l2fwd 修改</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/post/customize-a-minimum-linux-system-zg6t1t.html" title="定制一个最小的linux 系统"><img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/9.png" onerror="this.onerror=null;this.src='https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/404.jpg'" alt="定制一个最小的linux 系统"/></a><div class="content"><a class="title" href="/post/customize-a-minimum-linux-system-zg6t1t.html" title="定制一个最小的linux 系统">定制一个最小的linux 系统</a><time datetime="2025-01-09T12:26:50.000Z" title="发表于 2025-01-09 20:26:50">2025-01-09</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/post/python-debugging-method-z2sbahj.html" title="Python 调试手段"><img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/7.png" onerror="this.onerror=null;this.src='https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/404.jpg'" alt="Python 调试手段"/></a><div class="content"><a class="title" href="/post/python-debugging-method-z2sbahj.html" title="Python 调试手段">Python 调试手段</a><time datetime="2024-09-13T02:54:17.000Z" title="发表于 2024-09-13 10:54:17">2024-09-13</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/post/dpdk-analysis-powersbased-on-l2fwd-zoiac9.html" title="dpdk解析报文协议-基于l2fwd"><img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/8.png" onerror="this.onerror=null;this.src='https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/404.jpg'" alt="dpdk解析报文协议-基于l2fwd"/></a><div class="content"><a class="title" href="/post/dpdk-analysis-powersbased-on-l2fwd-zoiac9.html" title="dpdk解析报文协议-基于l2fwd">dpdk解析报文协议-基于l2fwd</a><time datetime="2023-12-25T03:34:32.000Z" title="发表于 2023-12-25 11:34:32">2023-12-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/post/in-depth-understanding-c-pointer-zp4avd.html" title="深入理解C指针"><img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/1.png" onerror="this.onerror=null;this.src='https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/404.jpg'" alt="深入理解C指针"/></a><div class="content"><a class="title" href="/post/in-depth-understanding-c-pointer-zp4avd.html" title="深入理解C指针">深入理解C指针</a><time datetime="2023-12-24T08:31:20.000Z" title="发表于 2023-12-24 16:31:20">2023-12-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/10/29/nginx-yuan-ma-yue-du-1/" title="Nginx源码阅读(1)"><img src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/featureimages/5.png" onerror="this.onerror=null;this.src='https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/404.jpg'" alt="Nginx源码阅读(1)"/></a><div class="content"><a class="title" href="/2022/10/29/nginx-yuan-ma-yue-du-1/" title="Nginx源码阅读(1)">Nginx源码阅读(1)</a><time datetime="2022-10-29T11:56:40.000Z" title="发表于 2022-10-29 19:56:40">2022-10-29</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2021 - 2025 By Ang</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/"><img class="icp-icon" src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/icp.png"><span>豫ICP备2021027231号    </span></a> <a target="_blank" rel="noopener" href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral"><span> 本站由 </span><img class="icp-icon" src="https://img-bed-youpaiyun.blogca.cn/pic-blogca/butterfly/youpaiyun_logo.png"><span>提供CDN加速/云存储服务 </span></a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">本地搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://npm.elemecdn.com/@fancyapps/ui/dist/fancybox.umd.js"></script><script src="/js/search/local-search.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"><script>function loadValine () {
+  function initValine () {
+    const valine = new Valine(Object.assign({
+      el: '#vcomment',
+      appId: 'igQ8yFG6f4qeCm1waoGVVXxA-gzGzoHsz',
+      appKey: 'D0z9Qkg5O3M6vBVoclPCXrDD',
+      avatar: 'robohash',
+      serverURLs: '',
+      //- requiredFields: ["nick,mail"],
+      //- tagMeta: '',
+      //- metaPlaceholder: {},
+      emojiMaps: "",
+      enableQQ: true,
+      path: window.location.pathname,
+      visitor: true
+    }, {"placeholder":"温馨提示：在昵称栏输入qq号，可快速获取头像和邮箱！ 填写邮箱可以及时收到回复哦(●'◡'●)","master":["dd318aa06b0fad5c90a89bfd064fc19e"],"friends":["53b4bfc38062833c28bbd249eef8d910","aded1fe6e4c36285743c55156f85f3e0"],"tagMeta":["博主","小伙伴","访客"],"metaPlaceholder":{"nick":"昵称/QQ号(必填)","mail":"邮箱(必填)","link":"网址(https://)"}}))
+  }
+
+  if (typeof Valine === 'function') initValine() 
+  else getScript('https://cdn.jsdelivr.net/gh/HCLonely/Valine@latest/dist/Valine.min.js').then(initValine)
+}
+
+if ('Valine' === 'Valine' || !false) {
+  if (false) btf.loadComment(document.getElementById('vcomment'),loadValine)
+  else setTimeout(loadValine, 0)
+} else {
+  function loadOtherComment () {
+    loadValine()
+  }
+}</script></div><script defer="defer" id="ribbon" src="https://npm.elemecdn.com/butterfly-extsrc@1/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="false"></script><script id="click-heart" src="https://npm.elemecdn.com/butterfly-extsrc@1/dist/click-heart.min.js" async="async" mobile="false"></script></div></body></html>
